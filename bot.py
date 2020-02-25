@@ -26,9 +26,11 @@ async def on_message(message):
                 query = server.query()
                 status = server.status()
                 if query.players.names == []:
-                    response = f"{hostname} is online with {query.players.online} players and a latency of {status.latency}ms"
+                    response = (f"{hostname} is online with {query.players.online}"
+                    f" players and a latency of {status.latency}ms")
                 else:
-                    response = f"{hostname} is online with {query.players.online}: {query.players.names} and a latency: {status.latency}ms"
+                    response = (f"{hostname} is online with {query.players.online}: "
+                    f"{query.players.names} and a latency: {status.latency}ms")
             except:
                 pass
             await message.channel.send(response)
