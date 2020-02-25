@@ -2,6 +2,7 @@ import os
 from mcstatus import MinecraftServer
 import discord
 import json
+from socket import timeout
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,7 +21,7 @@ async def on_message(message):
 
     if message.content == '!mcserver': 
         for hostname in hostnames:
-            response = f"{hostname} is offline"
+
             try:
                 server = MinecraftServer.lookup(hostname)
                 query = server.query()
@@ -31,8 +32,12 @@ async def on_message(message):
                 else:
                     response = (f"{hostname} is online with {query.players.online}: "
                     f"{query.players.names} and a latency: {status.latency}ms")
-            except:
-                pass
+            except timeout:
+                response = f"{hostname} is offline"
+
+            except Exception as e:
+                response = f"bot encountered exception {e}"
+
             await message.channel.send(response)
 
 client.run(token)
