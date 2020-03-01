@@ -2,44 +2,65 @@ import os
 from mcstatus import MinecraftServer
 import discord
 import json
-from socket import timeout, setdefaulttimeout
 from dotenv import load_dotenv
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
-hostnames = json.loads(os.environ['MC_HOSTNAMES'])
+GUILD = os.getenv('DISCORD_GUILD')
+
 client = discord.Client()
+hostnames = json.loads(os.environ['MC_HOSTNAMES'])
 
 @client.event
 async def on_ready():
-    print(f'{client.user.name} has connected to Discord!')
+    for guild in client.guilds:
+        if guild.name == GUILD:
+            break
+
+    print(
+        f'{client.user} is connected to the following guild:\n'
+        f'{guild.name}(id: {guild.id})'
+    )
 
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
-
-    if message.content == '!mcserver': 
-        server_status = []
+    if message.content == '!mcserver':
         for hostname in hostnames:
-
+            server = MinecraftServer.lookup(hostname)
+            data = {'online': 'offline'}
             try:
-                server = MinecraftServer.lookup(hostname)
-                query = server.query()
-                status = server.status()
-                if query.players.names:
-                    response = (f"{hostname} is online with {query.players.online}"
-                    f" players and a latency of {status.latency}ms")
-                else:
-                    response = (f"{hostname} is online with {query.players.online} players: "
-                    f"{query.players.names} and a latency: {status.latency}ms")
-            except timeout:
-                response = f"{hostname} is offline (Timed out)"
+                ping_response = server.ping()
+                data['online'] = 'online'
+                data['ping'] = ping_response
 
-            except Exception as e:
-                response = f"bot encountered exception {e}"
+                status_response = server.status(retries=1)
+                data['version'] = status_response.version.name
+                data['protocol'] = status_response.version.protocol
+                data['motd'] = status_response.description
+                data['player_count'] = status_response.players.online
+                data['player_max'] = status_response.players.max
+                data['players'] = []
+                if status_response.players.sample is not None:
+                    data['players'] = [{'name': player.name, 'id': player.id} for player in status_response.players.sample]
 
-            server_status.append(response)
-        total = f"{server_status[0]}\n{server_status[1]}\n{server_status[2]}"
-        await message.channel.send(total)
+                query_response = server.query(retries=1)
+                data['host_ip'] = query_response.raw['hostip']
+                data['host_port'] = query_response.raw['hostport']
+                data['map'] = query_response.map
+                data['plugins'] = query_response.software.plugins
+            except:
+                pass
+            if data['online'] == 'offline':
+                response = f"{hostname}: \U0000274C"
+            else:
+                if data['players']:
+                    response = f"{hostname}: \U00002705 - version: {data['version']} players: {data['player_count']}/{data['player_max']} {data['players']} ping: {data['ping']}ms motd: {data['motd']['text']}"
+                else: 
+                    response = f"{hostname}: \U00002705 - version: {data['version']} players: {data['player_count']}/{data['player_max']} ping: {data['ping']}ms motd: {data['motd']['text']}"
+            await message.channel.send(response)
+        
+        
+
 client.run(token)
