@@ -50,7 +50,7 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-    if message == '!mcserver':
+    if message == '!mctest':
         for hostname in hostnames:
             server = MinecraftServer.lookup(hostname)
 
@@ -60,17 +60,15 @@ async def on_message(message):
                 response = f"```{hostname} \U00002705 --- ver {data['version']} \n" \
                            f"   {data['motd']} \n " \
                            f"   Players ({data['player_count']}/{data['player_max']}) \n" \
-\
-                        for player in data['players']:
-                            response += f'      - {player["name"]}'
+
+                for player in data['players']:
+                    response += f'      - {player["name"]}'
 
                 response += ' ```'
 
             else:
-                response =  f"``` **{hostname}**  \U0000274C ``` "
+                response = f"``` **{hostname}**  \U0000274C ``` "
 
             await message.channel.send(response)
-        
-        
 
 client.run(token)
