@@ -1,7 +1,6 @@
 import os
 from mcstatus import MinecraftServer
 import discord
-import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -9,7 +8,7 @@ token = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
 client = discord.Client()
-hostnames = json.loads(os.environ['MC_HOSTNAMES'])
+hostname = os.getenv('MC_HOSTNAME')
 
 def is_online(server):
     try:
@@ -50,25 +49,24 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-    if message == '!mctest':
-        for hostname in hostnames:
-            server = MinecraftServer.lookup(hostname)
+    if message.content == '!mcserver':
+        server = MinecraftServer.lookup(hostname)
 
-            if is_online(server):
-                data = server_info(server)
+        if is_online(server):
+            data = server_info(server)
 
-                response = f"```{hostname} \U00002705 --- ver {data['version']} \n" \
-                           f"   {data['motd']} \n " \
-                           f"   Players ({data['player_count']}/{data['player_max']}) \n" \
+            response = f"```{hostname} \U00002705 --- ver {data['version']} \n" \
+                        f"   {data['motd']} \n " \
+                        f"   Players ({data['player_count']}/{data['player_max']}) \n" \
 
-                for player in data['players']:
-                    response += f'      - {player["name"]}'
+            for player in data['players']:
+                response += f'      - {player["name"]}'
 
-                response += ' ```'
+            response += ' ```'
 
-            else:
-                response = f"``` **{hostname}**  \U0000274C ``` "
+        else:
+            response = f"``` **{hostname}**  \U0000274C ``` "
 
-            await message.channel.send(response)
+        await message.channel.send(response)
 
 client.run(token)
